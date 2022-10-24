@@ -60,12 +60,13 @@ make_wkt <- function(aoi, fh_crs){
 }
 gdb_assembler <- function(fire_path, from, to, aoi){
   # messenging
-  cli::cli_progress_message("Working with the Corporate geodatabase file")
+  cli::cli_progress_step("Working with the Corporate geodatabase file")
   layer_list <- sf::st_layers(fire_path)
+  lyr <- "CPT_FIRE_HISTORY"
   fh_crs <- layer_list$crs[grepl(lyr, layer_list$name)][[1]]
   # match crs and proceed
   wkt_flt <- make_wkt(aoi, fh_crs)
-  cli::cli_progress_message("Querying the fire history")
+  cli::cli_progress_step("Querying the fire history")
   fh <- sf::st_read(dsn = fire_path, layer= lyr, quiet = TRUE, wkt_filter = wkt_flt)
   # manually rename the geometry column
   attr(fh, "sf_column") <- "shape"
@@ -84,6 +85,7 @@ gdb_assembler <- function(fire_path, from, to, aoi){
                      aoi_alb = aoi_alb,
                      aoi_name = aoi[['aoi_name']],
                      period = c(from,to))
+    cli::cli_progress_done()
     return(dat_list)
   } else {
     stop("There is no fire history data for that location")
@@ -93,13 +95,13 @@ gdb_assembler <- function(fire_path, from, to, aoi){
 
 shp_assembler <- function(fire_path, from, to, aoi){
   # messenging
-  cli::cli_progress_message("Working with a shape file")
+  cli::cli_progress_step("Working with a shape file")
   fname <- tools::file_path_sans_ext(basename(fire_path))
   fquery <- paste0('SELECT * from ', fname, ' LIMIT 1')
   fh_crs <- sf::st_crs(sf::read_sf(fire_path, query = fquery))
   # match crs and proceed
   wkt_flt <- make_wkt(aoi, fh_crs)
-  cli::cli_progress_message("Querying the fire history")
+  cli::cli_progress_step("Querying the fire history")
   fh <- sf::st_read(dsn = fire_path, quiet = TRUE, wkt_filter = wkt_flt)
   names(fh) <- tolower(names(fh))
   if(dim(fh)[1] != 0){
@@ -116,6 +118,7 @@ shp_assembler <- function(fire_path, from, to, aoi){
                      aoi_alb = aoi_alb,
                      aoi_name = aoi[['aoi_name']],
                      period = c(from,to))
+    cli::cli_progress_done()
     return(dat_list)
   } else {
     stop("There is no fire history data for that location")
@@ -129,7 +132,7 @@ assemble_data2 <- function(fire_path, from, to, aoi){
   } else if(stringr::str_detect(fire_path, pattern = ".shp")){
     dat_list <- shp_assembler(fire_path, from, to, aoi)
   } else {
-    stop("I can't work with that file type")
+    cli::cli_alert_danger("I'm sorry I can't work with that file")
   }
 }
 
@@ -137,7 +140,18 @@ assemble_data2 <- function(fire_path, from, to, aoi){
 
 
 fire_path <- "Z:/DEC/Prescribed_Bushfire_Outcomes_2018-134/DATA/Working/thinning/DBCA_FireHistory_NJF_1987to2017.shp"
-fire_path <- "V:/GIS1-Corporate/Data/GDB/Fire/Burn_data/Fire_Data_Burns.shp"
+fire_path <- "V:/GIS1-Corporate/Data/GDB/Fire/Burn_data/Fire_Data_Burns.gdb"
 fire_path <- "V:/GIS1-Corporate/Data/GDB/Fire/Burn_data/Fire_Data_Burns.json"
 stuff <- assemble_data2(fire_path = fire_path, from = 1987, to = 2017, aoi = l)
 
+
+doing_things <- function(input){
+  if(input == 0){
+    cli::cli_progress_step("I'm a zero")
+  } else if(input == 1){
+    cli::cli_progress_step("I'm a one")
+  } else {
+    cli::cli_progress_step("I'm neither")
+  }
+}
+doing_things(input = 3)
